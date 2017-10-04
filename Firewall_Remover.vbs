@@ -17,39 +17,22 @@ Function GetDomainName()
 End Function
 
 Function GetFirewallStatus()
+    ' Get each Firewall Status : Domain, Public and Private
     Dim PuValue, StValue, DoValue
     Set objReg = GetObject("winmgmts:{impersonationLevel=impersonate}!\\localhost\root\default:StdRegProv")
 
     If err.number = 0 Then
         objReg.GetDWORDValue &H80000002, "SYSTEM\CurrentControlSet\" &_
         "Services\SharedAccess\Parameters\FirewallPolicy\" &_
-        "PublicProfile\", "EnableFirewall", PuValue
+        "DomainProfile\", "EnableFirewall", DoValue
 
-        ' If PuValue <> 0 Then
-        '     strPublicFirewallStatus = "True"
-        ' Else
-        '     strPublicFirewallStatus = "False"
-        ' End If
+        objReg.GetDWORDValue &H80000002, "SYSTEM\CurrentControlSet\" &_
+        "Services\SharedAccess\Parameters\FirewallPolicy\" &_
+        "PublicProfile\", "EnableFirewall", PuValue
 
         objReg.GetDWORDValue &H80000002, "SYSTEM\CurrentControlSet\" &_
         "Services\SharedAccess\Parameters\FirewallPolicy\" &_
         "StandardProfile\", "EnableFirewall", StValue
-
-        ' If StValue <> 0 Then
-        '     strStandardFirewallStatus = "True"
-        ' Else
-        '     strStandardFirewallStatus = "False"
-        ' End If
-
-        objReg.GetDWORDValue &H80000002, "SYSTEM\CurrentControlSet\" &_
-        "Services\SharedAccess\Parameters\FirewallPolicy\" &_
-        "DomainProfile\", "EnableFirewall", DoValue
-
-        ' If DoValue <> 0 Then
-        '     strDomainFirewallStatus = "True"
-        ' Else
-        '     strDomainFirewallStatus = "False"
-        ' End If
     End If
 
     If DoValue OR StValue OR PuValue Then
@@ -65,6 +48,7 @@ Function GetFirewallStatus()
 
         ' PowerShell
         ' Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
+        wShell.run ("powershell.exe -noexit Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False")
     Else
         printw("Firewall disabled")
     End If
