@@ -1,6 +1,23 @@
-On Error Resume Next
+Dim PuValue, StValue, DoValue
+Dim disableFirewall
+settings = "settings.xml"
 
-Set wShell = WScript.CreateObject("WSCript.shell")
+' On Error Resume Next
+
+Set xmlDoc = CreateObject("Microsoft.XMLDOM")
+
+xmlDoc.Async = "False"
+xmlDoc.Load(settings)
+
+Set colNodes=xmlDoc.selectNodes("//domain/name")
+
+' For Each objNode in colNodes
+'     printw "XML : " & objNode.Text
+' Next
+
+' Set wShell = WScript.CreateObject("WSCript.shell")
+Set wShell = WScript.CreateObject("Shell.Application")
+
 
 Function printl(txt)
     WScript.StdOut.Write txt
@@ -18,7 +35,6 @@ End Function
 
 Function GetFirewallStatus()
     ' Get each Firewall Status : Domain, Public and Private
-    Dim PuValue, StValue, DoValue
     Set objReg = GetObject("winmgmts:{impersonationLevel=impersonate}!\\localhost\root\default:StdRegProv")
 
     If err.number = 0 Then
@@ -35,23 +51,9 @@ Function GetFirewallStatus()
         "StandardProfile\", "EnableFirewall", StValue
     End If
 
-    If DoValue OR StValue OR PuValue Then
-        printw( DoValue & StValue & PuValue)
-        printw("Firewall enabled. Disactivating...")
-        ' objReg.SetDWORDValue &H80000002, "SYSTEM\CurrentControlSet\" &_
-        ' "Services\SharedAccess\Parameters\FirewallPolicy\" &_
-        ' "PublicProfile\", "EnableFirewall", 0
-
-        ' Set WshShell = CreateObject("WScript.Shell")
-        ' myKey = "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\PublicProfile\EnableFirewall"
-        ' WshShell.RegWrite myKey, 0, "REG_DWORD"
-
-        ' PowerShell
-        ' Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
-        wShell.run ("powershell.exe -noexit Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False")
-    Else
-        printw("Firewall disabled")
-    End If
+    printw( DoValue & StValue & PuValue)
+    
+    
 End Function
 
 domain = GetDomainName()
@@ -61,4 +63,30 @@ If len(domain) > 5 Then
     printw(domain)
 Else
     printw("No Domain found")
+    domain = False
+End If
+
+If len(domain) > 5 Then
+    disableFirewall = False
+    For Each objNode in colNodes
+        If objNode.Text = """" & domain  & """" Then
+            printw "domaine secure"
+            disableFirewall = True
+        End If
+    Next
+    printw(disableFirewall)
+    If disableFirewall Then
+        If DoValue OR StValue OR PuValue Then
+            printw( DoValue & StValue & PuValue)
+            printw("Firewall enabled. Deactivating...")
+
+            ' PowerShell
+            ' Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
+            For Each profile In Array("Domain", "Public", "Private")
+                wShell.ShellExecute "powershell.exe", " Set-NetFirewallProfile -Profile " & profile &" -Enabled False", , "runas", 0
+            Next
+        Else
+            printw("Firewall disabled")
+        End If
+    End If
 End If
