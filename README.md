@@ -6,4 +6,5 @@ The file must be as followed :
 <domain>
     <name>"yourdomain1.local"</name>
     <name>"yourdomain2.local"</name>
-</domain>```
+</domain>
+```
